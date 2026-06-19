@@ -1,11 +1,12 @@
-import { withAuthMutation, withOptionalAuth, withPublicRead } from '@/lib/api/auth-handler';
+import { withAuthMutation, withPublicRead } from '@/lib/api/auth-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
-import { listVehicles } from '@/lib/firestore/app-data';
+import { listVehicles, getVehicle } from '@/lib/firestore/app-data';
 import { createVehicle } from '@/lib/firestore/app-writes';
+import { getDemoVehicles } from '@/lib/firestore/demo-fallback';
 import { vehicleCreateSchema } from '@/lib/validation/entities';
 
 export async function GET() {
-  return withPublicRead(() => listVehicles());
+  return withPublicRead(() => listVehicles(), () => getDemoVehicles());
 }
 
 export async function POST(request: Request) {

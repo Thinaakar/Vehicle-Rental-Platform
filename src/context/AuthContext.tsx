@@ -116,22 +116,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string,
       selectedRole?: LoginRole | null,
     ): Promise<{ success: boolean; error?: string }> => {
-      const apiUp = usesApi || (await isApiAvailable());
-
-      if (apiUp) {
-        const result = await apiClient.post<AuthUser>('/api/auth/login', {
-          email,
-          password,
-          selectedRole: selectedRole ?? null,
-        });
-        if (!result.ok) {
-          return { success: false, error: result.error || 'Login failed.' };
-        }
-        setUser(result.data);
-        persistAuthUser(result.data);
+      const apiResult = await apiClient.post<AuthUser>('/api/auth/login', {
+        email,
+        password,
+        selectedRole: selectedRole ?? null,
+      });
+      if (apiResult.ok) {
+        setUser(apiResult.data);
+        persistAuthUser(apiResult.data);
         localStorage.setItem('vr_current_screen', 'dashboard');
         setUsesApi(true);
         return { success: true };
+      }
+
+      if (apiResult.status !== 503 && apiResult.status !== 500) {
+        return { success: false, error: apiResult.error || 'Login failed.' };
       }
 
       await new Promise((resolve) => setTimeout(resolve, 400));
@@ -169,16 +168,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('vr_current_screen', 'dashboard');
       return { success: true };
     },
-    [usesApi],
+    [],
   );
 
   const logout = useCallback(async () => {
-    if (usesApi) {
-      await apiClient.post('/api/auth/logout');
-    }
+    await apiClient.post('/api/auth/logout').catch(() => undefined);
     setUser(null);
     persistAuthUser(null);
-  }, [usesApi]);
+  }, []);
 
   return (
     <AuthContext.Provider

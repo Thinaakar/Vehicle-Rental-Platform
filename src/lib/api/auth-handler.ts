@@ -1,18 +1,38 @@
 import { ensureSeedData } from '@/lib/firestore/seed';
-import { ensureDb, handleRouteError, jsonData, optionalAuth, requireAuth } from '@/lib/api/route-helpers';
+import {
+  handleRouteError,
+  jsonData,
+  optionalAuth,
+  requireAuth,
+  tryEnsureDb,
+} from '@/lib/api/route-helpers';
 import { apiError } from '@/lib/http/api-error';
+
+async function withFirebase<T>(
+  handler: () => Promise<T>,
+  fallback: () => T,
+  status = 200,
+): Promise<Response> {
+  try {
+    const ready = await tryEnsureDb();
+    if (!ready) return jsonData(fallback(), status);
+    const data = await handler();
+    return jsonData(data, status);
+  } catch (e) {
+    console.error(e);
+    return jsonData(fallback(), status);
+  }
+}
 
 export async function withAuth<T>(
   request: Request,
   handler: () => Promise<T>,
+  fallback: () => T,
   status = 200,
 ) {
   try {
-    await ensureDb();
-    await ensureSeedData();
     requireAuth(request);
-    const data = await handler();
-    return jsonData(data, status);
+    return withFirebase(handler, fallback, status);
   } catch (e) {
     return handleRouteError(e);
   }
@@ -21,14 +41,12 @@ export async function withAuth<T>(
 export async function withOptionalAuth<T>(
   request: Request,
   handler: (session: ReturnType<typeof optionalAuth>) => Promise<T>,
+  fallback: (session: ReturnType<typeof optionalAuth>) => T,
   status = 200,
 ) {
   try {
-    await ensureDb();
-    await ensureSeedData();
     const session = optionalAuth(request);
-    const data = await handler(session);
-    return jsonData(data, status);
+    return withFirebase(() => handler(session), () => fallback(session), status);
   } catch (e) {
     return handleRouteError(e);
   }
@@ -37,12 +55,17 @@ export async function withOptionalAuth<T>(
 export async function withAuthMutation<T>(
   request: Request,
   handler: () => Promise<T | null>,
-  options?: { notFound?: string; created?: boolean },
+  options?: { notFound?: string; created?: boolean; fallback?: () => T | null },
 ) {
   try {
-    await ensureDb();
-    await ensureSeedData();
     requireAuth(request);
+    const ready = await tryEnsureDb();
+    if (!ready) {
+      const data = options?.fallback?.() ?? null;
+      if (data === null) return apiError('Live updates require Firebase. Demo data is read-only.', 503);
+      return jsonData(data, options?.created ? 201 : 200);
+    }
+    await ensureSeedData();
     const data = await handler();
     if (data === null) return apiError(options?.notFound ?? 'Not found', 404);
     return jsonData(data, options?.created ? 201 : 200);
@@ -51,13 +74,6 @@ export async function withAuthMutation<T>(
   }
 }
 
-export async function withPublicRead<T>(handler: () => Promise<T>, status = 200) {
-  try {
-    await ensureDb();
-    await ensureSeedData();
-    const data = await handler();
-    return jsonData(data, status);
-  } catch (e) {
-    return handleRouteError(e);
-  }
+export async function withPublicRead<T>(handler: () => Promise<T>, fallback: () => T, status = 200) {
+  return withFirebase(handler, fallback, status);
 }

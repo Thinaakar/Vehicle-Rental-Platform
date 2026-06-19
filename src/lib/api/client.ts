@@ -30,6 +30,6 @@ export const apiClient = {
 };
 
 export async function isApiAvailable(): Promise<boolean> {
-  const result = await apiClient.get<{ firebase: string }>('/api/health');
-  return result.ok && result.data.firebase === 'connected';
+  const result = await apiClient.get<{ ok: boolean }>('/api/health');
+  return result.ok;
 }

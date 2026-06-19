@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -26,7 +26,7 @@ function parseServiceAccountJson(): admin.ServiceAccount | null {
     }
     return {
       projectId: parsed.project_id,
-      privateKey: parsed.private_key,
+      privateKey: parsed.private_key.replace(/\\n/g, '\n'),
       clientEmail: parsed.client_email,
     };
   } catch (e) {
@@ -58,7 +58,7 @@ function certFromCredentialsPath(relOrAbs: string): admin.ServiceAccount {
   }
   return {
     projectId: project_id,
-    privateKey: private_key,
+    privateKey: private_key.replace(/\\n/g, '\n'),
     clientEmail: client_email,
   };
 }
@@ -66,6 +66,8 @@ function certFromCredentialsPath(relOrAbs: string): admin.ServiceAccount {
 function parseServiceAccountFromFilePath(): admin.ServiceAccount | null {
   const rel = process.env.FIREBASE_CREDENTIALS?.trim();
   if (!rel) return null;
+  const resolved = resolve(process.cwd(), rel);
+  if (!existsSync(resolved)) return null;
   return certFromCredentialsPath(rel);
 }
 
@@ -129,9 +131,13 @@ export function getAdminStorageBucket() {
 }
 
 export function isFirebaseConfigured(): boolean {
-  return Boolean(
-    process.env.FIREBASE_CREDENTIALS?.trim() ||
-      process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim() ||
-      process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim(),
-  );
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) return true;
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim()) return true;
+  const rel = process.env.FIREBASE_CREDENTIALS?.trim();
+  if (!rel) return false;
+  try {
+    return existsSync(resolve(process.cwd(), rel));
+  } catch {
+    return false;
+  }
 }

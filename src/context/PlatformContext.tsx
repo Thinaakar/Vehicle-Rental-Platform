@@ -335,7 +335,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
           endDate: bookingDraft.returnDate,
           customerName: bookingDraft.fullName || authUser?.name,
         })
-        .then(() => refreshFromApi());
+        .then((res) => {
+          if (res.ok) void refreshFromApi();
+        });
     }
 
     const completed: CompletedBookingDetails = {
@@ -406,7 +408,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     saveBookings(updatedBookings);
 
     if (usesApi) {
-      void apiClient.post('/api/bookings', { vehicleId, startDate, endDate }).then(() => refreshFromApi());
+      void apiClient.post('/api/bookings', { vehicleId, startDate, endDate }).then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
     }
 
     if (!authUser || authUser.role === 'customer') {
@@ -426,7 +430,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     saveVehicles(applyVehicleStatusesFromBookings(vehicles, updatedBookings));
 
     if (usesApi) {
-      void apiClient.patch(`/api/bookings/${bookingId}/status`, { status }).then(() => refreshFromApi());
+      void apiClient.patch(`/api/bookings/${bookingId}/status`, { status }).then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
     }
   };
 
@@ -448,7 +454,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     saveVehicles(updatedVehicles);
 
     if (usesApi) {
-      void apiClient.post('/api/vehicles', vehicleData).then(() => refreshFromApi());
+      void apiClient.post('/api/vehicles', vehicleData).then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
     }
   };
 
@@ -467,7 +475,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     saveVehicles(updatedVehicles);
 
     if (usesApi) {
-      void apiClient.patch(`/api/vehicles/${vehicleId}/status`, { status }).then(() => refreshFromApi());
+      void apiClient.patch(`/api/vehicles/${vehicleId}/status`, { status }).then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
     }
   };
 
@@ -481,7 +491,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     saveVehicles(updatedVehicles);
 
     if (usesApi) {
-      void apiClient.delete(`/api/vehicles/${vehicleId}`).then(() => refreshFromApi());
+      void apiClient.delete(`/api/vehicles/${vehicleId}`).then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
     }
   };
 
@@ -522,7 +534,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     saveVehicles(updatedVehicles);
 
     if (usesApi) {
-      void apiClient.post('/api/reviews', { vehicleId, rating, comment }).then(() => refreshFromApi());
+      void apiClient.post('/api/reviews', { vehicleId, rating, comment }).then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
     }
   };
 
@@ -548,7 +562,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     if (!hasPermission(authUser, 'platform:reset')) return;
 
     if (usesApi) {
-      void apiClient.post('/api/platform/reset').then(() => refreshFromApi());
+      void apiClient.post('/api/platform/reset').then((res) => {
+        if (res.ok) void refreshFromApi();
+      });
       setCurrentRole('public');
       handleSetScreen('marketing');
       return;

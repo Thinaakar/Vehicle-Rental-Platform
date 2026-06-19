@@ -8,19 +8,21 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "upload:assets": "node scripts/upload-assets.mjs"
+    "upload:assets": "node scripts/upload-assets.mjs",
+    "test:api": "node scripts/test-api-workflow.mjs"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "15.1.11",
     "react": "19.0.3",
     "react-dom": "19.0.3",
     "tailwind-merge": "^2.6.0",
+    "firebase-admin": "^13.9.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "firebase-admin": "^13.9.0",
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "19.0.3",

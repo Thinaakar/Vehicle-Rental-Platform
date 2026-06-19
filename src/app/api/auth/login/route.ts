@@ -1,6 +1,7 @@
+import { verifyDemoLogin } from '@/lib/auth/demo-auth';
 import { verifyPassword } from '@/lib/auth/password';
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
-import { ensureDb, handleRouteError, jsonData } from '@/lib/api/route-helpers';
+import { handleRouteError, jsonData, tryEnsureDb } from '@/lib/api/route-helpers';
 import { apiError } from '@/lib/http/api-error';
 import { getUserRecordByEmail } from '@/lib/firestore/app-data';
 import { markUserLogin } from '@/lib/firestore/app-writes';
@@ -9,9 +10,27 @@ import { loginSchema } from '@/lib/validation/entities';
 
 export async function POST(request: Request) {
   try {
-    await ensureDb();
-    await ensureSeedData();
     const body = loginSchema.parse(await request.json());
+
+    if (!(await tryEnsureDb())) {
+      const demo = verifyDemoLogin(body.email, body.password, body.selectedRole);
+      if (!demo.ok) return apiError(demo.error, demo.status);
+      const user = demo.user;
+      const token = createSessionToken({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        vendorId: user.vendorId,
+        vendorName: user.vendorName,
+        avatar: user.avatar,
+      });
+      const res = jsonData(user);
+      res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+      return res;
+    }
+
+    await ensureSeedData();
     const account = await getUserRecordByEmail(body.email);
 
     if (!account || !verifyPassword(body.password, account.passwordHash)) {
