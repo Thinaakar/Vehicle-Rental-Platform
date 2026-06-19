@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Sparkles,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import { AuthUser } from '@/context/AuthContext';
@@ -64,25 +63,20 @@ export default function AppSidebar({
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.12),transparent_40%)]" />
 
-      <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-5">
-        <div className={cn('flex items-center gap-3 overflow-hidden', collapsed && 'justify-center w-full')}>
-          <div
-            className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-primary/30',
-              accentClass,
-            )}
-          >
-            <Sparkles className="h-5 w-5" />
+      <div
+        className={cn(
+          'relative z-10 flex shrink-0 items-center border-b border-white/10 px-5 py-5',
+          collapsed ? 'justify-center' : 'justify-between',
+        )}
+      >
+        {!collapsed && (
+          <div className="min-w-0">
+            <BrandLogo variant="light" size="sm" />
+            <span className="mt-0.5 block truncate text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              {portalLabel}
+            </span>
           </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <BrandLogo variant="light" size="sm" />
-              <span className="mt-0.5 block truncate text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                {portalLabel}
-              </span>
-            </div>
-          )}
-        </div>
+        )}
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}
