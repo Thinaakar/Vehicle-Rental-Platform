@@ -129,5 +129,16 @@ export const appTemplate = {
         ...ts(),
       ],
     },
+    {
+      key: 'roles',
+      label: 'Portal Roles',
+      order: 80,
+      fields: [
+        { key: 'name', label: 'Name', type: 'string', required: true },
+        { key: 'permissions', label: 'Permissions', type: 'string', required: true },
+        { key: 'status', label: 'Status', type: 'string', required: true },
+        ...ts(),
+      ],
+    },
   ],
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getStoredAuthUser, useAuth } from '@/context/AuthContext';
 import {
   BOOKING_DRAFT_KEY,
@@ -27,12 +27,14 @@ import {
 import { FIREBASE_VEHICLE_IMAGES } from '@/data/firebase-assets';
 import {
   getSeedBookings,
+  MARKETING_SHOWCASE_VEHICLES,
   SEED_FAVORITES,
   SEED_REVIEWS,
   SEED_VEHICLES,
 } from '@/data/seed-defaults';
 import { apiClient, isApiAvailable } from '@/lib/api/client';
 import type { PlatformSnapshot } from '@/lib/types/records';
+import { resetPortalNavConfigLocal } from '@/context/PortalNavContext';
 
 // Re-export platform types for existing imports
 export type { Vehicle, Booking, Review } from '@/data/platform-types';
@@ -77,6 +79,8 @@ function applyFirebaseVehicleImages(vehicle: Vehicle): Vehicle {
   const image = FIREBASE_VEHICLE_IMAGES[vehicle.id];
   return image ? { ...vehicle, image } : vehicle;
 }
+
+const MARKETING_VEHICLES: Vehicle[] = MARKETING_SHOWCASE_VEHICLES.map(applyFirebaseVehicleImages);
 
 function applyFirebaseBookingImages(booking: Booking): Booking {
   const image = FIREBASE_VEHICLE_IMAGES[booking.vehicleId];
@@ -585,12 +589,23 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     writeLocalStorageValue('vr_favorites', JSON.stringify(DEFAULT_FAVORITES));
     writeLocalStorageValue('vr_current_screen', 'marketing');
     writeLocalStorageValue(MOCK_DATA_VERSION_KEY, MOCK_DATA_VERSION);
+    resetPortalNavConfigLocal();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('portal-nav-reset'));
+    }
   };
+
+  const displayVehicles = useMemo(() => {
+    if (currentScreen === 'marketing' || currentScreen === 'booking') {
+      return MARKETING_VEHICLES;
+    }
+    return vehicles;
+  }, [currentScreen, vehicles]);
 
   return (
     <PlatformContext.Provider
       value={{
-        vehicles,
+        vehicles: displayVehicles,
         bookings,
         reviews,
         favoriteVehicleIds,

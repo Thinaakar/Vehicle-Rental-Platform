@@ -1,5 +1,5 @@
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { SEED_USERS } from '@/data/seed-defaults';
+import { getDemoUserAccountsForAuth } from '@/lib/firestore/demo-fallback';
 import type { PublicUser } from '@/lib/types/records';
 
 export type DemoLoginResult =
@@ -12,7 +12,7 @@ export function verifyDemoLogin(
   selectedRole: 'customer' | 'vendor' | null | undefined,
 ): DemoLoginResult {
   const normalized = email.trim().toLowerCase();
-  const account = SEED_USERS.find((u) => u.email.toLowerCase() === normalized);
+  const account = getDemoUserAccountsForAuth().find((u) => u.email.toLowerCase() === normalized);
 
   if (!account || !verifyPassword(password, hashPassword(account.password))) {
     return { ok: false, error: 'Invalid email or password.', status: 401 };

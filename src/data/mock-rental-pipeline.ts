@@ -1,6 +1,6 @@
 import type { Booking, Vehicle } from '@/data/platform-types';
 
-export const MOCK_DATA_VERSION = '3';
+export const MOCK_DATA_VERSION = '4';
 export const MOCK_DATA_VERSION_KEY = 'vr_mock_data_version';
 
 export function calcBookingTotal(pricePerDay: number, startDate: string, endDate: string): number {

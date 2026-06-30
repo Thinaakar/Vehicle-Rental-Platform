@@ -5,6 +5,8 @@ import { usePlatform, Vehicle } from '@/context/PlatformContext';
 import SafeImage from '@/components/SafeImage';
 import MarketingNav from '@/components/marketing/MarketingNav';
 import BrandLogo from '@/components/BrandLogo';
+import PremiumSelect from '@/components/ui/PremiumSelect';
+import { useMasterData } from '@/context/MasterDataContext';
 import { 
   Car, Bike, Truck, Shield, CreditCard, Clock, PhoneCall, 
   Star, MapPin, Calendar, Compass, ArrowRight, Zap, Eye, Mail
@@ -14,6 +16,7 @@ import { FIREBASE_MARKETING_HERO } from '@/data/firebase-assets';
 
 export default function LandingView() {
   const { vehicles, openBooking, updateBookingDraft } = usePlatform();
+  const { locationOptions } = useMasterData();
   const [searchLoc, setSearchLoc] = useState('');
   const [searchDate, setSearchDate] = useState('');
   const [returnDate, setSearchReturnDate] = useState('');
@@ -102,19 +105,13 @@ export default function LandingView() {
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-primary" /> Pickup Location
               </label>
-              <select 
-                value={searchLoc} 
-                onChange={(e) => setSearchLoc(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-primary transition-colors text-slate-900"
-              >
-                <option value="">Select Location</option>
-                <option value="Los Angeles, CA">Los Angeles, CA</option>
-                <option value="Miami, FL">Miami, FL</option>
-                <option value="Beverly Hills, CA">Beverly Hills, CA</option>
-                <option value="San Francisco, CA">San Francisco, CA</option>
-                <option value="New York, NY">New York, NY</option>
-                <option value="Seattle, WA">Seattle, WA</option>
-              </select>
+              <PremiumSelect
+                value={searchLoc}
+                onChange={setSearchLoc}
+                options={locationOptions}
+                placeholder="Select Location"
+                size="lg"
+              />
             </div>
 
             <div className="flex flex-col gap-2">

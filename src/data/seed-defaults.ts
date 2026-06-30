@@ -7,6 +7,7 @@ import {
 } from '@/data/firebase-assets';
 import type { Booking, Review, Vehicle } from '@/data/platform-types';
 import { buildDefaultBookings } from '@/data/mock-rental-pipeline';
+import { getDefaultPortalNavConfig } from '@/data/portal-nav-permissions';
 
 export const SEED_VENDORS = [
   { id: 'vendor-1', name: 'Apex Exotic Rentals', location: 'Los Angeles, CA', status: 'active' },
@@ -14,7 +15,7 @@ export const SEED_VENDORS = [
   { id: 'vendor-3', name: 'Metro Luxury Fleet', location: 'New York, NY', status: 'active' },
 ] as const;
 
-export const SEED_VEHICLES: Vehicle[] = [
+export const MARKETING_SHOWCASE_VEHICLES: Vehicle[] = [
   {
     id: 'veh-1',
     name: 'Porsche 911 GT3 RS',
@@ -137,6 +138,9 @@ export const SEED_VEHICLES: Vehicle[] = [
   },
 ];
 
+/** Operational demo feed — 2 samples for dashboards, API, and Firebase seed. */
+export const SEED_VEHICLES: Vehicle[] = MARKETING_SHOWCASE_VEHICLES.slice(0, 2);
+
 export const SEED_REVIEWS: Review[] = [
   {
     id: 'rev-1',
@@ -150,30 +154,19 @@ export const SEED_REVIEWS: Review[] = [
   },
   {
     id: 'rev-2',
-    vehicleId: 'veh-3',
-    vehicleName: 'Mercedes-Benz G63 AMG',
+    vehicleId: 'veh-2',
+    vehicleName: 'Tesla Model S Plaid',
     customerId: 'cust-sarah',
     customerName: 'Sarah Jenkins',
-    rating: 4,
-    comment: 'Super solid car. Very spacious and clean, perfect for our family road trip in Miami.',
-    date: '2026-02-12',
-  },
-  {
-    id: 'rev-3',
-    vehicleId: 'veh-4',
-    vehicleName: 'Audi R8 V10 Performance',
-    customerId: 'cust-alex',
-    customerName: 'Alex Rivera',
     rating: 5,
-    comment: 'The R8 was flawless for our weekend event. Pickup and return were both on time.',
-    date: '2026-03-17',
+    comment: 'Smooth electric drive and effortless pickup in San Francisco.',
+    date: '2026-02-12',
   },
 ];
 
 export const SEED_FAVORITES = [
   { id: 'fav-1', userId: 'user-customer', vehicleId: 'veh-1' },
   { id: 'fav-2', userId: 'user-customer', vehicleId: 'veh-2' },
-  { id: 'fav-3', userId: 'user-customer', vehicleId: 'veh-4' },
 ] as const;
 
 export const SEED_USERS = [
@@ -247,3 +240,20 @@ export function getSeedAppAssets() {
 }
 
 export const SEED_STORAGE_BUCKET = FIREBASE_STORAGE_BUCKET;
+
+const defaultPortalNav = getDefaultPortalNavConfig();
+
+export const SEED_PORTAL_ROLES = [
+  {
+    id: 'vendor',
+    name: 'Fleet Vendor',
+    permissions: defaultPortalNav.vendor,
+    status: 'active',
+  },
+  {
+    id: 'customer',
+    name: 'Customer',
+    permissions: defaultPortalNav.customer,
+    status: 'active',
+  },
+] as const;

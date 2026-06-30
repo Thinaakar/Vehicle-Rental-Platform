@@ -4,6 +4,7 @@ import type { Booking, Vehicle } from '@/data/platform-types';
 export type Permission =
   | 'platform:reset'
   | 'platform:settings'
+  | 'roles:manage'
   | 'fleet:view_all'
   | 'fleet:manage_all'
   | 'fleet:view_own'
@@ -16,6 +17,7 @@ export type Permission =
   | 'booking:create'
   | 'booking:review'
   | 'users:view_all'
+  | 'users:manage'
   | 'finance:view'
   | 'reports:view'
   | 'favorites:manage';
@@ -24,6 +26,8 @@ export const ROLE_PERMISSIONS: Record<AuthRole, Permission[]> = {
   admin: [
     'platform:reset',
     'platform:settings',
+    'roles:manage',
+    'users:manage',
     'fleet:view_all',
     'fleet:manage_all',
     'booking:view_all',
@@ -56,6 +60,28 @@ export const ROLE_PORTALS: Record<AuthRole, string> = {
   admin: 'Admin Portal',
   vendor: 'Vendor Portal',
   customer: 'Customer Portal',
+};
+
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  'platform:reset': 'Reset demo data',
+  'platform:settings': 'Manage platform settings',
+  'roles:manage': 'Manage roles & portal navigation',
+  'fleet:view_all': 'View all fleet inventory',
+  'fleet:manage_all': 'Manage all fleet inventory',
+  'fleet:view_own': 'View own fleet',
+  'fleet:manage_own': 'Manage own fleet',
+  'booking:view_all': 'View all bookings',
+  'booking:manage_all': 'Manage all bookings',
+  'booking:view_vendor': 'View vendor bookings',
+  'booking:manage_vendor': 'Manage vendor bookings',
+  'booking:view_own': 'View own bookings',
+  'booking:create': 'Create bookings',
+  'booking:review': 'Submit reviews',
+  'users:view_all': 'View all users',
+  'users:manage': 'Create and manage users',
+  'finance:view': 'View finance desk',
+  'reports:view': 'View analytics & reports',
+  'favorites:manage': 'Manage saved vehicles',
 };
 
 export function hasPermission(user: AuthUser | null, permission: Permission): boolean {

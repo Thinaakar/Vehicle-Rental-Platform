@@ -17,6 +17,7 @@ export type SidebarItem = {
   icon: React.ComponentType<{ className?: string }>;
   badge?: string | number;
   hint?: string;
+  permission?: string;
 };
 
 export type SidebarGroup = {

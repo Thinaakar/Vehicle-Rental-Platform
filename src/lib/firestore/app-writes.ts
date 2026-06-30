@@ -13,6 +13,7 @@ import {
   getSeedAppAssets,
   getSeedBookings,
   SEED_FAVORITES,
+  SEED_PORTAL_ROLES,
   SEED_REVIEWS,
   SEED_USERS,
   SEED_VEHICLES,
@@ -271,7 +272,7 @@ export async function resetDemoData(session: SessionPayload): Promise<void> {
   const authUser = sessionToAuthUser(session);
   if (!hasPermission(authUser, 'platform:reset')) throw new Error('Forbidden');
 
-  const tables = ['favorites', 'reviews', 'bookings', 'vehicles', 'users', 'vendors', 'appAssets'];
+  const tables = ['favorites', 'reviews', 'bookings', 'vehicles', 'users', 'vendors', 'appAssets', 'roles'];
   for (const table of tables) {
     const snap = await col(table).get();
     if (snap.empty) continue;
@@ -345,6 +346,13 @@ export async function seedAllDemoData(): Promise<void> {
       await seedDocument('appAssets', id, { ...rest, ...ts() });
     }
   }
+
+  if (await isEmpty('roles')) {
+    for (const role of SEED_PORTAL_ROLES) {
+      const { id, ...rest } = role;
+      await seedDocument('roles', id, { ...rest, ...ts() });
+    }
+  }
 }
 
 async function isEmpty(table: string): Promise<boolean> {
@@ -406,6 +414,30 @@ export async function createUser(input: {
     updatedAt: '',
   };
   return toPublicUser(user);
+}
+
+export async function createVendor(input: {
+  name: string;
+  location?: string;
+  status?: string;
+}): Promise<{ id: string; name: string; location?: string; status: string; createdAt: string; updatedAt: string }> {
+  await ensureDbReady();
+  const ref = col('vendors').doc();
+  const payload = {
+    name: input.name.trim(),
+    location: input.location?.trim(),
+    status: input.status ?? 'active',
+    ...ts(),
+  };
+  await ref.set(payload);
+  return {
+    id: ref.id,
+    name: payload.name,
+    location: payload.location,
+    status: payload.status,
+    createdAt: '',
+    updatedAt: '',
+  };
 }
 
 export async function resolveSessionUser(record: UserRecord): Promise<SessionPayload> {

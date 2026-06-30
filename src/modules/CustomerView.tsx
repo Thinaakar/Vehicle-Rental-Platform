@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePlatform, Booking } from '@/context/PlatformContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePortalNav } from '@/context/PortalNavContext';
 import SafeImage from '@/components/SafeImage';
 import DashboardLayout from '@/components/shell/DashboardLayout';
 import { CUSTOMER_NAV, CUSTOMER_TITLES } from '@/data/dashboard-nav';
@@ -16,6 +17,7 @@ import {
 export default function CustomerView() {
   const { bookings, reviews, vehicles, favoriteVehicleIds, addReview, openBooking, openMarketing } = usePlatform();
   const { user, logout } = useAuth();
+  const { filterNavForRole, canAccessTab, getFirstTab, isLoaded } = usePortalNav();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'active-rentals' | 'bookings' | 'payments' | 'saved' | 'reviews' | 'profile'>('dashboard');
 
   const customerId = user?.id ?? 'user-customer';
@@ -34,6 +36,31 @@ export default function CustomerView() {
   const savedVehicles = vehicles.filter((v) => favoriteVehicleIds.includes(v.id));
   const myReviews = reviews.filter((review) => review.customerId === customerId);
 
+  const navGroups = useMemo(() => {
+    const withBadges = CUSTOMER_NAV.map((group) => ({
+      ...group,
+      items: group.items.map((item) => {
+        if (item.id === 'active-rentals') return { ...item, badge: activeRentals.length };
+        if (item.id === 'bookings') return { ...item, badge: customerBookings.length };
+        if (item.id === 'saved') return { ...item, badge: savedVehicles.length };
+        return item;
+      }),
+    }));
+    return filterNavForRole('customer', withBadges);
+  }, [
+    filterNavForRole,
+    activeRentals.length,
+    customerBookings.length,
+    savedVehicles.length,
+  ]);
+
+  useEffect(() => {
+    if (!user || !isLoaded) return;
+    if (!canAccessTab('customer', activeTab)) {
+      setActiveTab(getFirstTab('customer') as typeof activeTab);
+    }
+  }, [user, activeTab, isLoaded, canAccessTab, getFirstTab]);
+
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (reviewVehicleId && reviewComment) {
@@ -45,16 +72,6 @@ export default function CustomerView() {
   };
 
   if (!user) return null;
-
-  const navGroups = CUSTOMER_NAV.map((group) => ({
-    ...group,
-    items: group.items.map((item) => {
-      if (item.id === 'active-rentals') return { ...item, badge: activeRentals.length };
-      if (item.id === 'bookings') return { ...item, badge: customerBookings.length };
-      if (item.id === 'saved') return { ...item, badge: savedVehicles.length };
-      return item;
-    }),
-  }));
 
   const page = CUSTOMER_TITLES[activeTab] ?? CUSTOMER_TITLES.dashboard;
 

@@ -1,12 +1,20 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePlatform, Vehicle, Booking } from '@/context/PlatformContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePortalNav } from '@/context/PortalNavContext';
 import SafeImage from '@/components/SafeImage';
 import DashboardLayout from '@/components/shell/DashboardLayout';
 import { VENDOR_NAV, VENDOR_TITLES } from '@/data/dashboard-nav';
 import RoleGuard from '@/components/auth/RoleGuard';
+import PremiumSelect from '@/components/ui/PremiumSelect';
+import { useMasterData } from '@/context/MasterDataContext';
+import {
+  fuelOptions,
+  transmissionOptions,
+  vehicleStatusOptions,
+} from '@/data/select-options';
 import { BookingPipelineActions, BookingStatusBadge } from '@/components/booking/BookingPipelineActions';
 import { 
   BarChart3, Car, Calendar, DollarSign, Star, Settings, Plus, 
@@ -16,6 +24,8 @@ import {
 export default function VendorView() {
   const { vehicles, bookings, reviews, addVehicle, deleteVehicle, updateBookingStatus, updateVehicleStatus, openMarketing } = usePlatform();
   const { user, logout } = useAuth();
+  const { filterNavForRole, canAccessTab, getFirstTab, isLoaded } = usePortalNav();
+  const { categoryOptions, locationOptionsRequired, locations } = useMasterData();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'fleet' | 'bookings' | 'calendar' | 'earnings' | 'reviews'>('dashboard');
 
   const vendorId = user?.vendorId ?? 'vendor-1';
@@ -69,6 +79,25 @@ export default function VendorView() {
     return vendorBookings.filter((booking) => booking.startDate <= dayKey && booking.endDate >= dayKey);
   };
 
+  const navGroups = useMemo(() => {
+    const withBadges = VENDOR_NAV.map((group) => ({
+      ...group,
+      items: group.items.map((item) => {
+        if (item.id === 'fleet') return { ...item, badge: vendorVehicles.length };
+        if (item.id === 'bookings') return { ...item, badge: pendingBookings.length || vendorBookings.length };
+        return item;
+      }),
+    }));
+    return filterNavForRole('vendor', withBadges);
+  }, [filterNavForRole, vendorVehicles.length, pendingBookings.length, vendorBookings.length]);
+
+  useEffect(() => {
+    if (!user || !isLoaded) return;
+    if (!canAccessTab('vendor', activeTab)) {
+      setActiveTab(getFirstTab('vendor') as typeof activeTab);
+    }
+  }, [user, activeTab, isLoaded, canAccessTab, getFirstTab]);
+
   // Handle vehicle submission
   const handleAddVehicleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,15 +126,6 @@ export default function VendorView() {
   };
 
   if (!user) return null;
-
-  const navGroups = VENDOR_NAV.map((group) => ({
-    ...group,
-    items: group.items.map((item) => {
-      if (item.id === 'fleet') return { ...item, badge: vendorVehicles.length };
-      if (item.id === 'bookings') return { ...item, badge: pendingBookings.length || vendorBookings.length };
-      return item;
-    }),
-  }));
 
   const page = VENDOR_TITLES[activeTab] ?? VENDOR_TITLES.dashboard;
 
@@ -281,15 +301,13 @@ export default function VendorView() {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex gap-2 justify-end">
-                            <select 
+                            <PremiumSelect
                               value={car.status}
-                              onChange={(e) => updateVehicleStatus(car.id, e.target.value as Vehicle['status'])}
-                              className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold uppercase focus:outline-none"
-                            >
-                              <option value="Available">Available</option>
-                              <option value="Active">Active</option>
-                              <option value="Maintenance">Maintenance</option>
-                            </select>
+                              onChange={(status) => updateVehicleStatus(car.id, status as Vehicle['status'])}
+                              options={vehicleStatusOptions}
+                              size="sm"
+                              className="w-[130px]"
+                            />
                             <button 
                               onClick={() => deleteVehicle(car.id)}
                               className="text-rose-600 hover:text-white hover:bg-rose-605 border border-rose-100 hover:border-transparent rounded-lg p-1.5 transition-colors"
@@ -521,19 +539,11 @@ export default function VendorView() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Category</label>
-                  <select 
+                  <PremiumSelect
                     value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value as Vehicle['category'])}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-primary text-slate-900"
-                  >
-                    <option value="Cars">Cars</option>
-                    <option value="Bikes">Bikes</option>
-                    <option value="Luxury Cars">Luxury Cars</option>
-                    <option value="SUVs">SUVs</option>
-                    <option value="Vans">Vans</option>
-                    <option value="Trucks">Trucks</option>
-                    <option value="Electric Vehicles">Electric Vehicles</option>
-                  </select>
+                    onChange={(value) => setNewCategory(value as Vehicle['category'])}
+                    options={categoryOptions}
+                  />
                 </div>
               </div>
 
@@ -553,18 +563,11 @@ export default function VendorView() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Location</label>
-                  <select 
+                  <PremiumSelect
                     value={newLocation}
-                    onChange={(e) => setNewLocation(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-primary text-slate-900"
-                  >
-                    <option value="Los Angeles, CA">Los Angeles, CA</option>
-                    <option value="Miami, FL">Miami, FL</option>
-                    <option value="Beverly Hills, CA">Beverly Hills, CA</option>
-                    <option value="San Francisco, CA">San Francisco, CA</option>
-                    <option value="New York, NY">New York, NY</option>
-                    <option value="Seattle, WA">Seattle, WA</option>
-                  </select>
+                    onChange={setNewLocation}
+                    options={locationOptionsRequired}
+                  />
                 </div>
               </div>
 
@@ -583,28 +586,22 @@ export default function VendorView() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Transmission</label>
-                  <select 
+                  <PremiumSelect
                     value={newTransmission}
-                    onChange={(e) => setNewTransmission(e.target.value as Vehicle['transmission'])}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase focus:outline-none text-slate-900"
-                  >
-                    <option value="Automatic">Automatic</option>
-                    <option value="Manual">Manual</option>
-                  </select>
+                    onChange={(value) => setNewTransmission(value as Vehicle['transmission'])}
+                    options={transmissionOptions}
+                    size="sm"
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fuel Type</label>
-                  <select 
+                  <PremiumSelect
                     value={newFuel}
-                    onChange={(e) => setNewFuel(e.target.value as Vehicle['fuel'])}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase focus:outline-none text-slate-900"
-                  >
-                    <option value="Electric">Electric</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="Petrol">Petrol</option>
-                    <option value="Diesel">Diesel</option>
-                  </select>
+                    onChange={(value) => setNewFuel(value as Vehicle['fuel'])}
+                    options={fuelOptions}
+                    size="sm"
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">

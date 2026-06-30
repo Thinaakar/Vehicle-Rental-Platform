@@ -18,8 +18,11 @@ import {
 } from 'lucide-react';
 import MarketingNav from '@/components/marketing/MarketingNav';
 import SafeImage from '@/components/SafeImage';
+import PremiumSelect from '@/components/ui/PremiumSelect';
 import { usePlatform } from '@/context/PlatformContext';
 import { useAuth } from '@/context/AuthContext';
+import { useMasterData } from '@/context/MasterDataContext';
+import { toSelectOptions } from '@/data/select-options';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -29,16 +32,6 @@ const STEPS = [
   'Summary',
   'Confirmation',
 ] as const;
-
-const LOCATIONS = [
-  'Los Angeles, CA',
-  'San Francisco, CA',
-  'Miami, FL',
-  'New York, NY',
-  'Chicago, IL',
-  'Seattle, WA',
-  'Beverly Hills, CA',
-];
 
 function calcRentalDays(pickupDate: string, returnDate: string) {
   if (!pickupDate || !returnDate) return 0;
@@ -59,6 +52,8 @@ export default function BookingWizard() {
     openLogin,
   } = usePlatform();
   const { isAuthenticated } = useAuth();
+  const { locations } = useMasterData();
+  const locationOptions = useMemo(() => toSelectOptions(locations), [locations]);
 
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -76,19 +71,20 @@ export default function BookingWizard() {
   const grandTotal = rentalCharges + taxes + securityDeposit;
 
   useEffect(() => {
-    if (!bookingDraft.pickupDate) {
+    if (!bookingDraft.pickupDate && locations.length > 0) {
       const today = new Date().toISOString().split('T')[0];
       const end = new Date();
       end.setDate(end.getDate() + 3);
+      const defaultLocation = locations[0];
       updateBookingDraft({
         pickupDate: today,
         returnDate: end.toISOString().split('T')[0],
-        pickupLocation: LOCATIONS[0],
-        returnLocation: LOCATIONS[0],
-        destination: bookingDraft.destination || LOCATIONS[0],
+        pickupLocation: defaultLocation,
+        returnLocation: defaultLocation,
+        destination: bookingDraft.destination || defaultLocation,
       });
     }
-  }, [bookingDraft.pickupDate, updateBookingDraft]);
+  }, [bookingDraft.pickupDate, bookingDraft.destination, locations, updateBookingDraft]);
 
   const validateStep = (current: number) => {
     const nextErrors: Record<string, string> = {};
@@ -278,18 +274,21 @@ export default function BookingWizard() {
                 </div>
 
                 {viewMode === 'dropdown' ? (
-                  <select
+                  <PremiumSelect
                     value={bookingDraft.vehicleId}
-                    onChange={(e) => updateBookingDraft({ vehicleId: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                  >
-                    <option value="">Choose a vehicle</option>
-                    {vehicles.filter((v) => v.status === 'Available').map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} · ${v.price}/day
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(vehicleId) => updateBookingDraft({ vehicleId })}
+                    placeholder="Choose a vehicle"
+                    size="lg"
+                    options={[
+                      { value: '', label: 'Choose a vehicle' },
+                      ...vehicles
+                        .filter((vehicle) => vehicle.status === 'Available')
+                        .map((vehicle) => ({
+                          value: vehicle.id,
+                          label: `${vehicle.name} · $${vehicle.price}/day`,
+                        })),
+                    ]}
+                  />
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {vehicles.filter((v) => v.status === 'Available').map((vehicle) => {
@@ -336,32 +335,32 @@ export default function BookingWizard() {
                 <h2 className="text-xl font-black text-slate-900">Trip details</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Pickup Location" error={errors.pickupLocation}>
-                    <select
+                    <PremiumSelect
                       value={bookingDraft.pickupLocation}
-                      onChange={(e) =>
+                      onChange={(pickupLocation) =>
                         updateBookingDraft({
-                          pickupLocation: e.target.value,
-                          returnLocation: bookingDraft.sameReturnLocation ? e.target.value : bookingDraft.returnLocation,
+                          pickupLocation,
+                          returnLocation: bookingDraft.sameReturnLocation
+                            ? pickupLocation
+                            : bookingDraft.returnLocation,
                         })
                       }
-                      className="field-input"
-                    >
-                      {LOCATIONS.map((loc) => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
+                      options={locationOptions}
+                      size="lg"
+                    />
                   </Field>
                   <Field label="Return Location" error={errors.returnLocation}>
-                    <select
-                      value={bookingDraft.sameReturnLocation ? bookingDraft.pickupLocation : bookingDraft.returnLocation}
+                    <PremiumSelect
+                      value={
+                        bookingDraft.sameReturnLocation
+                          ? bookingDraft.pickupLocation
+                          : bookingDraft.returnLocation
+                      }
                       disabled={bookingDraft.sameReturnLocation}
-                      onChange={(e) => updateBookingDraft({ returnLocation: e.target.value })}
-                      className="field-input disabled:opacity-60"
-                    >
-                      {LOCATIONS.map((loc) => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
+                      onChange={(returnLocation) => updateBookingDraft({ returnLocation })}
+                      options={locationOptions}
+                      size="lg"
+                    />
                   </Field>
                 </div>
 
@@ -381,15 +380,12 @@ export default function BookingWizard() {
                 </label>
 
                 <Field label="Destination / Drop Location" error={errors.destination}>
-                  <select
+                  <PremiumSelect
                     value={bookingDraft.destination}
-                    onChange={(e) => updateBookingDraft({ destination: e.target.value })}
-                    className="field-input"
-                  >
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>{loc}</option>
-                    ))}
-                  </select>
+                    onChange={(destination) => updateBookingDraft({ destination })}
+                    options={locationOptions}
+                    size="lg"
+                  />
                 </Field>
 
                 <div className="grid gap-4 md:grid-cols-2">

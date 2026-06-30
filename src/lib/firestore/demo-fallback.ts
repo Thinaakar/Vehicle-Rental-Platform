@@ -6,8 +6,8 @@ import {
   getSeedBookings,
   SEED_FAVORITES,
   SEED_REVIEWS,
+  SEED_USERS,
   SEED_VEHICLES,
-  SEED_VENDORS,
 } from '@/data/seed-defaults';
 import {
   FIREBASE_FAVICON,
@@ -19,6 +19,37 @@ import {
 import type { AssetsBundle, PlatformSnapshot, PublicUser } from '@/lib/types/records';
 import type { Booking } from '@/data/platform-types';
 import { applyVehicleStatusesFromBookings } from '@/data/mock-rental-pipeline';
+import type { PortalNavConfig, PortalRole } from '@/data/portal-nav-permissions';
+import { getDefaultPortalNavConfig } from '@/data/portal-nav-permissions';
+import { mergePortalNavConfig } from '@/lib/portal-nav';
+import type { PlatformRoleDefinition } from '@/data/platform-roles';
+import { getSystemPlatformRoles, slugifyRoleName } from '@/data/platform-roles';
+import {
+  getDefaultMasterData,
+  getDefaultMasterVendors,
+  mergeMasterData,
+  type MasterDataBundle,
+} from '@/data/master-data';
+import type { Permission } from '@/data/roles-permissions';
+import type { AuthRole } from '@/context/AuthContext';
+import type { VendorRecord } from '@/lib/types/records';
+import { hashPassword } from '@/lib/auth/password';
+
+let demoPortalNavConfig: PortalNavConfig = getDefaultPortalNavConfig();
+let demoMasterData: MasterDataBundle = getDefaultMasterData();
+let demoVendors: VendorRecord[] = getDefaultMasterVendors();
+let extraDemoUsers: Array<{
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: AuthRole;
+  avatar?: string;
+  vendorId?: string;
+  vendorName?: string;
+  status: 'active' | 'inactive';
+}> = [];
+let extraCustomRoles: PlatformRoleDefinition[] = [];
 
 export function getDemoAssetsBundle(): AssetsBundle {
   return {
@@ -67,14 +98,14 @@ export function getDemoPlatformSnapshot(session: SessionPayload | null): Platfor
 }
 
 export function getDemoUsers(): PublicUser[] {
-  return [
+  const base = [
     {
       id: 'user-admin',
       name: 'System Administrator',
       email: 'admin@vehiclerental.com',
-      role: 'admin',
+      role: 'admin' as const,
       avatar: 'SA',
-      status: 'active',
+      status: 'active' as const,
       createdAt: '',
       updatedAt: '',
     },
@@ -82,11 +113,11 @@ export function getDemoUsers(): PublicUser[] {
       id: 'user-vendor',
       name: 'Premium Fleet Vendor',
       email: 'vendor@vehiclerental.com',
-      role: 'vendor',
+      role: 'vendor' as const,
       avatar: 'PV',
       vendorId: 'vendor-1',
       vendorName: 'Apex Exotic Rentals',
-      status: 'active',
+      status: 'active' as const,
       createdAt: '',
       updatedAt: '',
     },
@@ -94,21 +125,165 @@ export function getDemoUsers(): PublicUser[] {
       id: 'user-customer',
       name: 'John Customer',
       email: 'customer@vehiclerental.com',
-      role: 'customer',
+      role: 'customer' as const,
       avatar: 'JC',
-      status: 'active',
+      status: 'active' as const,
       createdAt: '',
       updatedAt: '',
     },
   ];
+
+  const extra = extraDemoUsers.map(({ password: _password, ...user }) => ({
+    ...user,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  return [...base, ...extra];
+}
+
+export function getDemoUserAccountsForAuth() {
+  return [
+    ...SEED_USERS.map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      role: user.role,
+      avatar: user.avatar,
+      vendorId: user.vendorId,
+      vendorName: user.vendorName,
+      status: 'active' as const,
+    })),
+    ...extraDemoUsers,
+  ];
+}
+
+export function addDemoUser(input: {
+  name: string;
+  email: string;
+  password: string;
+  role: AuthRole;
+  vendorId?: string;
+  vendorName?: string;
+}): PublicUser {
+  const email = input.email.trim().toLowerCase();
+  const exists = getDemoUserAccountsForAuth().some((user) => user.email.toLowerCase() === email);
+  if (exists) throw new Error('A user with this email already exists');
+
+  const user = {
+    id: `user-${Date.now()}`,
+    name: input.name.trim(),
+    email,
+    password: input.password,
+    role: input.role,
+    avatar: input.name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase(),
+    vendorId: input.vendorId,
+    vendorName: input.vendorName,
+    status: 'active' as const,
+  };
+
+  extraDemoUsers.push(user);
+  const { password: _password, ...publicUser } = user;
+  void _password;
+  return {
+    ...publicUser,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 export function getDemoVendors() {
-  return SEED_VENDORS.map((v) => ({
-    ...v,
-    createdAt: '',
-    updatedAt: '',
-  }));
+  return demoVendors.map((vendor) => ({ ...vendor }));
+}
+
+export function addDemoVendor(input: { name: string; location?: string }): VendorRecord {
+  const vendor: VendorRecord = {
+    id: `vendor-${Date.now()}`,
+    name: input.name.trim(),
+    location: input.location?.trim(),
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  demoVendors = [...demoVendors, vendor];
+  return vendor;
+}
+
+export function getDemoMasterData(): MasterDataBundle {
+  return {
+    locations: [...demoMasterData.locations],
+    categories: [...demoMasterData.categories],
+  };
+}
+
+export function addDemoMasterDataItem(type: 'locations' | 'categories', value: string): MasterDataBundle {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error('Value is required');
+  const list = demoMasterData[type];
+  if (list.some((item) => item.toLowerCase() === trimmed.toLowerCase())) {
+    throw new Error('This entry already exists');
+  }
+  demoMasterData = {
+    ...demoMasterData,
+    [type]: [...list, trimmed],
+  };
+  return getDemoMasterData();
+}
+
+export function removeDemoMasterDataItem(type: 'locations' | 'categories', value: string): MasterDataBundle {
+  demoMasterData = {
+    ...demoMasterData,
+    [type]: demoMasterData[type].filter((item) => item !== value),
+  };
+  return getDemoMasterData();
+}
+
+export function updateDemoMasterData(partial: Partial<MasterDataBundle>): MasterDataBundle {
+  demoMasterData = mergeMasterData({ ...demoMasterData, ...partial });
+  return getDemoMasterData();
+}
+
+export function getDemoPlatformRoles(): PlatformRoleDefinition[] {
+  return [...getSystemPlatformRoles(), ...extraCustomRoles];
+}
+
+export function addDemoPlatformRole(input: {
+  label: string;
+  description?: string;
+  portal: AuthRole;
+  permissions: Permission[];
+}): PlatformRoleDefinition {
+  const label = input.label.trim();
+  const name = slugifyRoleName(label);
+  if (!name) throw new Error('Role name is invalid');
+  if (getDemoPlatformRoles().some((role) => role.name === name)) {
+    throw new Error('A role with this name already exists');
+  }
+
+  const role: PlatformRoleDefinition = {
+    id: `custom-${name}`,
+    name,
+    label,
+    description: input.description?.trim() || 'Custom role',
+    portal: input.portal,
+    permissions: input.permissions.length ? input.permissions : ['booking:view_own'],
+    isSystem: false,
+    status: 'active',
+  };
+
+  extraCustomRoles = [...extraCustomRoles, role];
+  return role;
+}
+
+export function deleteDemoPlatformRole(id: string): void {
+  if (!id.startsWith('custom-')) throw new Error('System roles cannot be deleted');
+  extraCustomRoles = extraCustomRoles.filter((role) => role.id !== id);
 }
 
 export function sessionToPublicUser(session: SessionPayload): PublicUser {
@@ -124,4 +299,24 @@ export function sessionToPublicUser(session: SessionPayload): PublicUser {
     createdAt: '',
     updatedAt: '',
   };
+}
+
+export function getDemoPortalNavConfig(): PortalNavConfig {
+  return {
+    vendor: [...demoPortalNavConfig.vendor],
+    customer: [...demoPortalNavConfig.customer],
+  };
+}
+
+export function updateDemoPortalNavConfig(role: PortalRole, permissions: string[]): PortalNavConfig {
+  demoPortalNavConfig = mergePortalNavConfig(
+    { [role]: permissions },
+    demoPortalNavConfig,
+  );
+  return getDemoPortalNavConfig();
+}
+
+export function resetDemoPortalNavConfig(): PortalNavConfig {
+  demoPortalNavConfig = getDefaultPortalNavConfig();
+  return getDemoPortalNavConfig();
 }

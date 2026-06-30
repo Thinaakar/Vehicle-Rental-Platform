@@ -8,8 +8,10 @@ import { useAuth } from '@/context/AuthContext';
 import { ADMIN_NAV, ADMIN_TITLES } from '@/data/dashboard-nav';
 import { cn } from '@/lib/utils';
 import RoleGuard from '@/components/auth/RoleGuard';
+import PremiumSelect from '@/components/ui/PremiumSelect';
+import AdminSettingsHub from '@/components/admin/settings/AdminSettingsHub';
+import { revenuePeriodOptions, vehicleStatusOptions } from '@/data/select-options';
 import { BookingPipelineActions, BookingStatusBadge } from '@/components/booking/BookingPipelineActions';
-import { usePermissions } from '@/hooks/usePermissions';
 import { 
   BarChart3, Car, Calendar, Users, DollarSign, Bell, Settings, 
   Star, Sliders, TrendingUp, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, ShieldCheck
@@ -139,8 +141,6 @@ export default function AdminView() {
     return true;
   });
 
-  const { can } = usePermissions();
-
   if (!user) return null;
 
   const page = ADMIN_TITLES[activeTab] ?? ADMIN_TITLES.dashboard;
@@ -222,15 +222,13 @@ export default function AdminView() {
                       <p className="mt-1 text-xs font-medium text-slate-500">Gross booking value across the fleet</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <select
+                      <PremiumSelect
                         value={revenuePeriod}
-                        onChange={(e) => setRevenuePeriod(e.target.value as typeof revenuePeriod)}
-                        className="rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="6m">Last 6 months</option>
-                        <option value="ytd">Year to date</option>
-                        <option value="12m">Last 12 months</option>
-                      </select>
+                        onChange={(value) => setRevenuePeriod(value as typeof revenuePeriod)}
+                        options={revenuePeriodOptions}
+                        size="sm"
+                        className="w-auto min-w-[140px]"
+                      />
                       <span
                         className={cn(
                           'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold',
@@ -504,15 +502,13 @@ export default function AdminView() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex gap-2 justify-end">
-                          <select 
+                          <PremiumSelect
                             value={car.status}
-                            onChange={(e) => updateVehicleStatus(car.id, e.target.value as Vehicle['status'])}
-                            className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold uppercase focus:outline-none"
-                          >
-                            <option value="Available">Available</option>
-                            <option value="Active">Active</option>
-                            <option value="Maintenance">Maintenance</option>
-                          </select>
+                            onChange={(status) => updateVehicleStatus(car.id, status as Vehicle['status'])}
+                            options={vehicleStatusOptions}
+                            size="sm"
+                            className="w-[130px]"
+                          />
                           <button 
                             onClick={() => deleteVehicle(car.id)}
                             className="text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-100 hover:border-transparent rounded-lg p-1.5 transition-colors"
@@ -807,49 +803,7 @@ export default function AdminView() {
         )}
 
         {/* ==================== TAB: SETTINGS ==================== */}
-        {activeTab === 'settings' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-3xl border border-slate-200/50 p-6 shadow-premium">
-              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider mb-6">Platform Settings</h3>
-              <div className="space-y-4">
-                {[
-                  'Auto-approve bookings under $500',
-                  'Email notifications for new reviews',
-                  'Maintenance alerts for inactive vehicles',
-                ].map((setting) => (
-                  <label key={setting} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <span className="text-sm font-semibold text-slate-700">{setting}</span>
-                    <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary" />
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="bg-white rounded-3xl border border-slate-200/50 p-6 shadow-premium">
-              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider mb-6">Demo Data</h3>
-              <p className="mb-4 text-sm leading-relaxed text-slate-500">
-                Restore the full rental pipeline with 14 sample bookings across all stages — pending, approved, active, completed, and cancelled.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Reset all demo vehicles, bookings, and reviews to defaults?')) {
-                    resetData();
-                  }
-                }}
-                disabled={!can('platform:reset')}
-                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Reset Demo Data
-              </button>
-            </div>
-            <div className="bg-white rounded-3xl border border-slate-200/50 p-6 shadow-premium">
-              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider mb-6">Operational Notes</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                This section can hold environment toggles, SLA thresholds, payout rules, and maintenance workflows for production use.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === 'settings' && <AdminSettingsHub onResetDemo={resetData} />}
     </DashboardLayout>
     </RoleGuard>
   );

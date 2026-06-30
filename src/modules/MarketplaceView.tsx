@@ -4,8 +4,10 @@ import React, { useState, useMemo } from 'react';
 import { usePlatform, Vehicle } from '@/context/PlatformContext';
 import SafeImage from '@/components/SafeImage';
 import BrandLogo from '@/components/BrandLogo';
+import PremiumSelect from '@/components/ui/PremiumSelect';
+import { marketplaceSortOptions, toSelectOptions } from '@/data/select-options';
 import { 
-  Car, SlidersHorizontal, Star, MapPin, Heart, Eye, Fuel, Calendar, X, ChevronDown
+  Car, SlidersHorizontal, Star, MapPin, Heart, Eye, Fuel, Calendar, X
 } from 'lucide-react';
 
 export default function MarketplaceView() {
@@ -139,15 +141,11 @@ export default function MarketplaceView() {
             {/* Category Filter */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Category</label>
-              <select 
-                value={selectedCategory} 
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary text-slate-900"
-              >
-                {categories.map((cat, idx) => (
-                  <option key={idx} value={cat}>{cat}</option>
-                ))}
-              </select>
+              <PremiumSelect
+                value={selectedCategory}
+                onChange={setSelectedCategory}
+                options={toSelectOptions(categories)}
+              />
             </div>
 
             {/* Price Filter */}
@@ -170,43 +168,31 @@ export default function MarketplaceView() {
             {/* Fuel Filter */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fuel System</label>
-              <select 
-                value={selectedFuel} 
-                onChange={(e) => setSelectedFuel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary text-slate-900"
-              >
-                {fuels.map((fuel, idx) => (
-                  <option key={idx} value={fuel}>{fuel}</option>
-                ))}
-              </select>
+              <PremiumSelect
+                value={selectedFuel}
+                onChange={setSelectedFuel}
+                options={toSelectOptions(fuels)}
+              />
             </div>
 
             {/* Transmission Filter */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gearbox</label>
-              <select 
-                value={selectedTransmission} 
-                onChange={(e) => setSelectedTransmission(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary text-slate-900"
-              >
-                {transmissions.map((t, idx) => (
-                  <option key={idx} value={t}>{t}</option>
-                ))}
-              </select>
+              <PremiumSelect
+                value={selectedTransmission}
+                onChange={setSelectedTransmission}
+                options={toSelectOptions(transmissions)}
+              />
             </div>
 
             {/* Seats Filter */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Seating Capacity</label>
-              <select 
-                value={selectedSeats} 
-                onChange={(e) => setSelectedSeats(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-primary text-slate-900"
-              >
-                {seatsOptions.map((s, idx) => (
-                  <option key={idx} value={s}>{s === 'All' ? 'All' : `${s} Seats`}</option>
-                ))}
-              </select>
+              <PremiumSelect
+                value={selectedSeats}
+                onChange={setSelectedSeats}
+                options={toSelectOptions(seatsOptions, (seat) => (seat === 'All' ? 'All' : `${seat} Seats`))}
+              />
             </div>
 
             <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -235,19 +221,12 @@ export default function MarketplaceView() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="sm:hidden w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-900"
               />
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  className="appearance-none bg-white border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs font-semibold text-slate-900 shadow-sm"
-                >
-                  <option value="featured">Sort by featured</option>
-                  <option value="price-asc">Price low to high</option>
-                  <option value="rating-desc">Rating high to low</option>
-                  <option value="newest">Newest</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <PremiumSelect
+                value={sortBy}
+                onChange={(value) => setSortBy(value as typeof sortBy)}
+                options={marketplaceSortOptions}
+                className="sm:min-w-[200px]"
+              />
             </div>
           </div>
 

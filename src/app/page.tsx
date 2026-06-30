@@ -2,6 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { PlatformProvider, usePlatform } from '@/context/PlatformContext';
+import { PortalNavProvider } from '@/context/PortalNavContext';
+import { MasterDataProvider } from '@/context/MasterDataContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import LoginPage from '@/modules/LoginPage';
 import LandingView from '@/modules/LandingView';
@@ -87,7 +89,11 @@ export default function HomePage() {
   return (
     <AuthProvider>
       <PlatformProvider>
-        <AppRouter />
+        <PortalNavProvider>
+          <MasterDataProvider>
+            <AppRouter />
+          </MasterDataProvider>
+        </PortalNavProvider>
       </PlatformProvider>
     </AuthProvider>
   );

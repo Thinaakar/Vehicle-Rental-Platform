@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient, isApiAvailable } from '@/lib/api/client';
+import { findStoredDemoUser } from '@/lib/demo-storage';
 import { DEMO_CREDENTIALS } from '@/data/demo-accounts';
 import { SEED_USERS } from '@/data/seed-defaults';
 
@@ -134,6 +135,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 400));
+      const storedUser = findStoredDemoUser(email, password, selectedRole ?? null);
+      if (storedUser) {
+        setUser(storedUser);
+        persistAuthUser(storedUser);
+        localStorage.setItem('vr_current_screen', 'dashboard');
+        return { success: true };
+      }
+
       const match = MOCK_USERS.find(
         (u) => u.email.toLowerCase() === email.toLowerCase().trim() && u.password === password,
       );
